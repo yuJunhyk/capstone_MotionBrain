@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MotionBrain 프로토타입 v0.3 · 고양이의 변덕</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-screen="intro" data-source="none">
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="ic-rock" viewBox="0 0 64 64">
+    <rect x="12" y="24" width="40" height="30" rx="13" fill="currentColor"/>
+    <circle cx="21" cy="25" r="6.5" fill="currentColor"/>
+    <circle cx="31" cy="22" r="6.5" fill="currentColor"/>
+    <circle cx="41" cy="22" r="6.5" fill="currentColor"/>
+    <circle cx="49" cy="27" r="5.5" fill="currentColor"/>
+    <path d="M16 40 q12 -6 24 -1" stroke="rgba(0,0,0,.2)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="ic-paper" viewBox="0 0 64 64">
+    <rect x="17" y="30" width="32" height="27" rx="11" fill="currentColor"/>
+    <rect x="18" y="12" width="7" height="26" rx="3.5" fill="currentColor"/>
+    <rect x="27" y="6" width="7" height="32" rx="3.5" fill="currentColor"/>
+    <rect x="36" y="8" width="7" height="30" rx="3.5" fill="currentColor"/>
+    <rect x="45" y="14" width="6.5" height="24" rx="3.2" fill="currentColor"/>
+    <rect x="6" y="30" width="7" height="18" rx="3.5" fill="currentColor" transform="rotate(-35 9.5 39)"/>
+  </symbol>
+  <symbol id="ic-scissors" viewBox="0 0 64 64">
+    <rect x="17" y="30" width="32" height="27" rx="11" fill="currentColor"/>
+    <rect x="22" y="6" width="7" height="32" rx="3.5" fill="currentColor" transform="rotate(-12 25.5 22)"/>
+    <rect x="33" y="6" width="7" height="32" rx="3.5" fill="currentColor" transform="rotate(12 36.5 22)"/>
+    <circle cx="44" cy="33" r="5.5" fill="currentColor"/>
+    <circle cx="50" cy="39" r="5" fill="currentColor"/>
+    <rect x="8" y="32" width="7" height="16" rx="3.5" fill="currentColor" transform="rotate(-30 11.5 40)"/>
+  </symbol>
+</svg>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🐾</span>
+      <span class="brand-name">MotionBrain</span>
+      <span class="tag">프로토타입 v0.3</span>
+    </div>
+    <div class="topbar-right">
+      <span id="source-badge" class="badge">입력 없음</span>
+      <label class="mode">
+        <span>입력 방식</span>
+        <select id="mode-select">
+          <option value="P" selected>제안 방식 (P)</option>
+          <option value="B1">유지 확정 (B1)</option>
+          <option value="B0">즉시 확정 (B0)</option>
+        </select>
+      </label>
+      <button id="tech-toggle" class="btn-ghost" type="button" aria-pressed="false">기술 정보</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ───────── 무대 ───────── -->
+    <section id="stage" class="card stage">
+      <div class="stage-top">
+        <div>
+          <h1 class="game-title">고양이의 변덕</h1>
+          <p class="game-sub">고양이 부탁에 맞춰 가위·바위·보를 보여줘. 60초!</p>
+        </div>
+        <div class="hud">
+          <div class="hud-item"><span class="hud-k">남은 시간</span><span id="timer" class="hud-v mono">01:00</span></div>
+          <div class="hud-item"><span class="hud-k">점수</span><span id="score" class="hud-v mono accent">0</span></div>
+        </div>
+      </div>
+
+      <div id="scene" class="scene">
+        <div class="wall"></div>
+        <div class="window"><span></span></div>
+        <div class="poster">쉬는 것도<br>능력이야</div>
+        <div class="floor"></div>
+        <div class="rug"></div>
+
+        <div id="cat" class="cat" data-state="sleep"></div>
+
+        <div id="bubble" class="bubble">졸고 있는 고양이를 발견했어요.</div>
+
+        <div id="cat-hand" class="cat-hand" hidden>
+          <span class="cat-hand-k">고양이 손</span>
+          <svg class="hand-icon"><use id="cat-hand-icon" href="#ic-rock"/></svg>
+          <span id="cat-hand-label" class="cat-hand-v">바위</span>
+        </div>
+
+        <div id="prompt-card" class="prompt-card" hidden>
+          <span id="prompt-k" class="prompt-k">지시</span>
+          <span id="prompt-v" class="prompt-v">이겨봐</span>
+          <span id="prompt-sub" class="prompt-sub">고양이를 이기는 손을 보여줘</span>
+        </div>
+
+        <div id="feedback" class="feedback" hidden></div>
+
+        <div id="stamp" class="stamp" hidden><span>완료</span></div>
+
+        <!-- 손 놓침·일시정지·로딩 -->
+        <div id="overlay" class="overlay" hidden>
+          <div class="overlay-card">
+            <div id="overlay-icon" class="overlay-icon">🐱</div>
+            <h2 id="overlay-title">손이 안 보여요</h2>
+            <p id="overlay-text">손을 화면 안에 보여줘</p>
+            <span id="overlay-badge" class="pill pill-warn">⏸ 잠시 멈춤</span>
+            <button id="overlay-btn" class="btn btn-secondary" type="button" hidden>키보드로 해보기</button>
+          </div>
+        </div>
+
+        <!-- 시작 화면 -->
+        <div id="screen-intro" class="screen-card">
+          <h2>졸고 있는 고양이를 발견했어요</h2>
+          <p>손을 보여주면 고양이가 깨어나요. 카메라 영상은 이 기기 안에서만 처리되고 저장·전송되지 않아요.</p>
+          <div class="btn-row">
+            <button id="btn-camera" class="btn btn-primary" type="button">고양이 깨우기 · 카메라 켜기</button>
+            <button id="btn-keyboard" class="btn btn-secondary" type="button">웹캠 없이 키보드로 해보기</button>
+          </div>
+        </div>
+
+        <!-- 결과 화면 -->
+        <div id="screen-result" class="screen-card result-card" hidden>
+          <h2>함께 놀아줘서 고마워!</h2>
+          <p class="result-sub">오늘도 즐거운 1분 ♥</p>
+          <div id="hifive-ask" class="hifive-ask">
+            <span>손을 펴서 <strong>하이파이브!</strong></span>
+            <button id="btn-skip-hifive" class="link" type="button">건너뛰기 ›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── 옆 패널 ───────── -->
+    <aside id="side" class="side">
+      <div class="card cam-card">
+        <div class="card-head">
+          <span id="cam-title">내 손을 보여주세요</span>
+          <span id="cam-status" class="pill">대기</span>
+        </div>
+        <div class="cam-box">
+          <video id="video" autoplay muted playsinline></video>
+          <div id="cam-placeholder" class="cam-placeholder">
+            <p class="cam-placeholder-title">카메라가 꺼져 있어요</p>
+            <ul id="key-help" class="key-help" hidden></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card hand-card">
+        <div class="my-hand">
+          <span class="my-hand-k">내 손</span>
+          <svg class="hand-icon big"><use id="my-hand-icon" href="#ic-paper"/></svg>
+          <span id="my-hand-label" class="my-hand-v">—</span>
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="ring-bg" cx="32" cy="32" r="26"/>
+            <circle id="ring-fg" class="ring-fg" cx="32" cy="32" r="26"/>
+          </svg>
+          <span id="ring-label" class="ring-label">잠깐 유지해줘</span>
+        </div>
+      </div>
+
+      <div id="hint-card" class="card hint-card">
+        <span class="hint-icon" id="hint-icon">💡</span>
+        <div>
+          <p id="hint-title" class="hint-title">손 모양을 유지하면 입력돼요</p>
+          <p id="hint-text" class="hint-text">너무 빠르게 움직이면 인식이 어려워요 :)</p>
+        </div>
+      </div>
+
+      <div id="record-card" class="card record-card" hidden>
+        <div class="card-head"><span>놀이 기록</span></div>
+        <div class="record-grid">
+          <div class="rec"><span class="rec-k">정답</span><span id="rec-correct" class="rec-v mono">0 / 0</span></div>
+          <div class="rec"><span class="rec-k">놀이 시간</span><span id="rec-time" class="rec-v mono">60초</span></div>
+          <div class="rec"><span class="rec-k">점수</span><span id="rec-score" class="rec-v mono">0</span></div>
+        </div>
+        <div id="reward" class="reward" hidden>
+          <span id="reward-emoji" class="reward-emoji">🛏️</span>
+          <div>
+            <p id="reward-title" class="reward-title">포근한 방석 <span class="pill pill-accent">잠금 해제!</span></p>
+            <p id="reward-text" class="reward-text">새로운 아이템이 방에 추가됐어요!</p>
+          </div>
+        </div>
+        <div class="btn-col">
+          <button id="btn-again" class="btn btn-primary" type="button">한 번 더 놀기</button>
+          <button id="btn-home" class="btn btn-secondary" type="button">처음으로</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="techbar" class="techbar" hidden>
+    <code id="tech-line" class="tech-line">—</code>
+    <button id="btn-reset-record" class="link" type="button">완료 기록 초기화</button>
+  </footer>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
